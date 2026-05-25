@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 internal sealed class AzAcmeRenewalWorker(
     AzAcmeConfiguration configuration,
-    AzureBlobStateStore blobStateStore,
+    IAzAcmeStateStore stateStore,
     AzureKeyVaultCertificateStore keyVaultCertificateStore,
     AzureDnsChallengePublisher dnsChallengePublisher,
     AzAcmeAccount acmeAccountService,
@@ -19,7 +19,7 @@ internal sealed class AzAcmeRenewalWorker(
         using var activity = activitySource.StartActivity("RenewCertificates");
         activity?.SetTag("az_acme.state_blob_name", configuration.StateBlobName);
 
-        var state = await blobStateStore.LoadAsync(ct);
+        var state = await stateStore.LoadAsync(ct);
 
         activity?.SetTag("az_acme.certificate_count", state.Certificates.Count);
 
@@ -30,7 +30,11 @@ internal sealed class AzAcmeRenewalWorker(
         }
 
         logger.LogInformation("Initialize ACME client for account: {AcmeAccountUrl}", state.AccountUrl);
-        using var acmeClient = new AcmeClient(new Uri(state.AcmeDirectoryUrl));
+        var acmeDirectoryUrl = new Uri(state.AcmeDirectoryUrl);
+        using var acmeHttpClient = CreateAcmeHttpClient(acmeDirectoryUrl, configuration.AllowInsecureAcmeServerCertificate);
+        using var acmeClient = acmeHttpClient is null
+            ? new AcmeClient(acmeDirectoryUrl)
+            : new AcmeClient(acmeHttpClient, acmeDirectoryUrl);
         var acmeAccount = await acmeAccountService.LoadOrCreateAsync(acmeClient, state, ct);
 
         logger.LogInformation("Processing {CertificateCount} certificate(s) for renewal", state.Certificates.Count);
@@ -65,8 +69,39 @@ internal sealed class AzAcmeRenewalWorker(
             await keyVaultCertificateStore.ImportCertificateAsync(certificate, pfxBytes, ct);
         }
 
-        await blobStateStore.SaveAsync(state, ct);
+        await stateStore.SaveAsync(state, ct);
 
         logger.LogInformation("Certificate renewal run completed");
+    }
+
+    private static HttpClient? CreateAcmeHttpClient(Uri acmeDirectoryUrl, bool allowInsecureAcmeServerCertificate)
+    {
+        if (!allowInsecureAcmeServerCertificate)
+        {
+            return null;
+        }
+
+        if (!IsLocalDevelopmentAcmeHost(acmeDirectoryUrl))
+        {
+            throw new InvalidOperationException($"AZ_ACME_ALLOW_INSECURE_ACME_SERVER_CERTIFICATE can only be used with a local development ACME directory URL. Host '{acmeDirectoryUrl.Host}' is not allowed.");
+        }
+
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
+
+        return new HttpClient(handler, disposeHandler: true);
+    }
+
+    private static bool IsLocalDevelopmentAcmeHost(Uri acmeDirectoryUrl)
+    {
+        if (acmeDirectoryUrl.IsLoopback)
+        {
+            return true;
+        }
+
+        return acmeDirectoryUrl.Host.Equals("host.docker.internal", StringComparison.OrdinalIgnoreCase)
+            || acmeDirectoryUrl.Host.Equals("pebble", StringComparison.OrdinalIgnoreCase);
     }
 }

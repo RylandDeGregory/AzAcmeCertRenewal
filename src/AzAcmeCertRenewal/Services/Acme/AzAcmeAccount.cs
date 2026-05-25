@@ -15,15 +15,22 @@ internal sealed class AzAcmeAccount(ILogger<AzAcmeAccount> logger)
 
         var signer = CreateSigner(state);
 
-        try
+        if (!string.IsNullOrWhiteSpace(state.AccountUrl))
         {
-            var account = await acmeClient.FindAccountAsync(signer, ct);
-            state.AccountUrl = account.AccountUrl.ToString();
-            return account;
+            try
+            {
+                var account = await acmeClient.FindAccountAsync(signer, ct);
+                state.AccountUrl = account.AccountUrl.ToString();
+                return account;
+            }
+            catch (AcmeProtocolException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                logger.LogInformation("No existing ACME account was found for the configured account key. Creating a new account");
+            }
         }
-        catch (AcmeProtocolException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        else
         {
-            logger.LogInformation("No existing ACME account was found for the configured account key. Creating a new account");
+            logger.LogInformation("No ACME account URL is configured. Creating a new account");
         }
 
         var createdAccount = await acmeClient.CreateAccountAsync(

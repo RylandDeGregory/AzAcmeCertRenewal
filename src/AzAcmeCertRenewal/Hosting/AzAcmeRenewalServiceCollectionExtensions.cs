@@ -46,14 +46,22 @@ internal static class AzAcmeRenewalServiceCollectionExtensions
     /// <returns>The same service collection so additional calls can be chained.</returns>
     private static IServiceCollection AddAzureServices(this IServiceCollection services)
     {
-        services.AddSingleton(serviceProvider =>
+        services.AddSingleton<IAzAcmeStateStore>(serviceProvider =>
         {
             var configuration = serviceProvider.GetRequiredService<AzAcmeConfiguration>();
-            var credential = serviceProvider.GetRequiredService<TokenCredential>();
+            if (!string.IsNullOrWhiteSpace(configuration.LocalStateFilePath))
+            {
+                return new LocalFileStateStore(
+                    configuration.LocalStateFilePath,
+                    serviceProvider.GetRequiredService<ILogger<LocalFileStateStore>>());
+            }
+
+            var storageAccountBlobEndpoint = configuration.StorageAccountBlobEndpoint
+                ?? throw new InvalidOperationException("AZURE_STORAGE_ACCOUNT_BLOB_ENDPOINT environment variable is not set.");
 
             return new AzureBlobStateStore(
-                configuration.StorageAccountBlobEndpoint,
-                credential,
+                storageAccountBlobEndpoint,
+                serviceProvider.GetRequiredService<TokenCredential>(),
                 configuration.StorageBlobContainerName,
                 configuration.StateBlobName,
                 serviceProvider.GetRequiredService<ILogger<AzureBlobStateStore>>());

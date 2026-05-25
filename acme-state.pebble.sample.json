@@ -1,0 +1,26 @@
+{
+	"acmeDirectoryUrl": "https://localhost:14000/dir",
+	"contact": [
+		"mailto:admin@example.test"
+	],
+	"termsOfServiceAgreed": true,
+	"accountUrl": null,
+	"accountKeyPem": null,
+	"certificates": [
+		{
+			"name": "example-test",
+			"domains": [
+				"example.test"
+			],
+			"keyVaultCertificateName": "example-test",
+			"privateKeyPem": null,
+			"keyType": "rsa-2048",
+			"alwaysNewKey": false,
+			"renewBeforeDays": 3650,
+			"dnsSleepSeconds": 0,
+			"validationTimeoutSeconds": 30,
+			"ocspMustStaple": false,
+			"pfxPassword": null
+		}
+	]
+}

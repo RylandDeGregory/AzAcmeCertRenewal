@@ -17,3 +17,4 @@ main.bicepparam
 
 # local state file
 acme-state.json
+acme-state.local.json

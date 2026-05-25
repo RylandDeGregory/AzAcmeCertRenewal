@@ -110,10 +110,14 @@ Required settings:
 | `AZURE_KEY_VAULT_ENDPOINT` | Key Vault endpoint, for example `https://myvault.vault.azure.net/`. |
 | `AZURE_DNS_ZONE_RESOURCE_ID` | Full Azure resource ID of the DNS zone used for DNS-01 challenges. |
 
+`AZURE_STORAGE_ACCOUNT_BLOB_ENDPOINT` is not required when `AZ_ACME_STATE_FILE_PATH` is set.
+
 Optional settings:
 
 | Name | Default | Description |
 | --- | --- | --- |
+| `AZ_ACME_ALLOW_INSECURE_ACME_SERVER_CERTIFICATE` | `false` | Allows self-signed ACME server certificates for local Pebble directory URLs only. Intended for local Pebble testing. |
+| `AZ_ACME_STATE_FILE_PATH` | unset | Reads and writes ACME state from a local JSON file instead of Azure Blob Storage. Intended for local Pebble testing. |
 | `AZURE_STORAGE_BLOB_CONTAINER_NAME` | `acme` | Blob container that stores the ACME state file. |
 | `AZ_ACME_STATE_BLOB_NAME` | `acme-state.json` | Blob name of the ACME state JSON document. |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | set by bicep deployment | Enables OpenTelemetry export to Application Insights when set. |
@@ -135,6 +139,43 @@ dotnet run --project src/AzAcmeCertRenewal/AzAcmeCertRenewal.csproj
 ```
 
 The app loads the state blob, checks the matching Key Vault certificate expiration date for each configured certificate, renews certificates that are inside their renewal window, publishes and cleans up Azure DNS TXT records for DNS-01 validation, imports renewed PFX bytes into Key Vault, and saves updated state back to Blob Storage.
+
+### Test with Pebble
+
+[Pebble](https://github.com/letsencrypt/pebble) can be used as a local ACME server while keeping Azure Blob Storage, Azure DNS, and Key Vault as the app boundary services.
+
+Start Pebble from the repository root:
+
+```PowerShell
+docker compose -f docker-compose.pebble.yml up -d
+```
+
+Use [acme-state.pebble.sample.json](acme-state.pebble.sample.json) as the state file contents for local testing. It points the ACME directory to `https://localhost:14000/dir`, uses short validation waits, and renews immediately. The compose file sets `PEBBLE_VA_ALWAYS_VALID=1`, so Pebble accepts challenge answers without requiring its local `challtestsrv` DNS server to contain the Azure DNS TXT record.
+
+For a fully local state file, copy the sample to an ignored working file and point the app at that path:
+
+```PowerShell
+Copy-Item ./acme-state.pebble.sample.json ./acme-state.local.json
+$env:AZ_ACME_STATE_FILE_PATH = '../acme-state.local.json'
+```
+
+The app writes generated ACME account and certificate private keys back to this file, so do not use the checked-in sample as the writable state file.
+
+If you run the .NET app on your host with `dotnet run`, keep the state blob `acmeDirectoryUrl` as `https://localhost:14000/dir`. If you run the app in a container on the same Compose network as Pebble, use `https://pebble:14000/dir` instead.
+
+Set this app setting only for local Pebble runs:
+
+```PowerShell
+$env:AZ_ACME_ALLOW_INSECURE_ACME_SERVER_CERTIFICATE = 'true'
+```
+
+That setting allows Pebble's self-signed local certificate, but only when the configured ACME directory host is local development only, such as `localhost`, `127.0.0.1`, `host.docker.internal`, or `pebble`.
+
+Stop Pebble when finished:
+
+```PowerShell
+docker compose -f docker-compose.pebble.yml down
+```
 
 ### Container Apps job
 

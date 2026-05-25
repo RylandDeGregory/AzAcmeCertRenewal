@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 internal sealed class AzAcmeRenewalProcessor(ILogger<AzAcmeRenewalProcessor> logger)
 {
     private static readonly TimeSpan s_defaultValidationTimeout = TimeSpan.FromSeconds(120);
+    private static readonly TimeSpan s_dnsPropagationLogInterval = TimeSpan.FromSeconds(30);
 
     private static DateTimeOffset CreateValidationDeadline(int validationTimeoutSeconds)
     {
@@ -85,7 +86,7 @@ internal sealed class AzAcmeRenewalProcessor(ILogger<AzAcmeRenewalProcessor> log
             if (certificateState.DnsSleepSeconds > 0)
             {
                 logger.LogInformation("Wait {DnsSleepSeconds} seconds for DNS TXT records to propagate", certificateState.DnsSleepSeconds);
-                await Task.Delay(TimeSpan.FromSeconds(certificateState.DnsSleepSeconds), ct);
+                await WaitForDnsPropagationAsync(certificateState.DnsSleepSeconds, ct);
             }
 
             foreach (var challengeUrl in pendingChallengeUrls)
@@ -101,6 +102,32 @@ internal sealed class AzAcmeRenewalProcessor(ILogger<AzAcmeRenewalProcessor> log
             foreach (var instruction in publishedInstructions)
             {
                 await dnsChallengePublisher.CleanupAsync(instruction, ct);
+            }
+        }
+    }
+
+    private async Task WaitForDnsPropagationAsync(int dnsSleepSeconds, CancellationToken ct)
+    {
+        var remaining = TimeSpan.FromSeconds(dnsSleepSeconds);
+        var elapsed = TimeSpan.Zero;
+
+        while (remaining > TimeSpan.Zero)
+        {
+            var delay = remaining > s_dnsPropagationLogInterval
+                ? s_dnsPropagationLogInterval
+                : remaining;
+
+            await Task.Delay(delay, ct);
+
+            elapsed += delay;
+            remaining -= delay;
+
+            if (remaining > TimeSpan.Zero)
+            {
+                logger.LogInformation(
+                    "DNS propagation in progress: {ElapsedSeconds}/{TotalSeconds} seconds elapsed",
+                    (int)elapsed.TotalSeconds,
+                    dnsSleepSeconds);
             }
         }
     }

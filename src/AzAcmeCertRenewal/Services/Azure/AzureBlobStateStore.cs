@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using Azure;
 using Azure.Core;
 using Azure.Storage.Blobs;
@@ -12,14 +10,8 @@ internal sealed class AzureBlobStateStore(
     TokenCredential credential,
     string containerName,
     string blobName,
-    ILogger<AzureBlobStateStore> logger)
+    ILogger<AzureBlobStateStore> logger) : IAzAcmeStateStore
 {
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true
-    };
-
     private readonly BlobClient _blobClient = new BlobServiceClient(storageAccountBlobEndpoint, credential)
         .GetBlobContainerClient(containerName)
         .GetBlobClient(blobName);
@@ -31,7 +23,7 @@ internal sealed class AzureBlobStateStore(
             logger.LogInformation("Load ACME state blob {BlobName} from container {BlobContainerName}", _blobClient.Name, _blobClient.BlobContainerName);
 
             var response = await _blobClient.DownloadContentAsync(ct);
-            var state = response.Value.Content.ToObjectFromJson<AzAcmeState>(s_jsonSerializerOptions)
+            var state = response.Value.Content.ToObjectFromJson<AzAcmeState>(AzAcmeStateJson.SerializerOptions)
                 ?? throw new InvalidOperationException($"ACME state blob [{_blobClient.Name}] could not be parsed.");
 
             logger.LogInformation(
@@ -59,7 +51,7 @@ internal sealed class AzureBlobStateStore(
                 ContentType = "application/json"
             }
         };
-        var content = BinaryData.FromObjectAsJson(state, s_jsonSerializerOptions);
+        var content = BinaryData.FromObjectAsJson(state, AzAcmeStateJson.SerializerOptions);
 
         logger.LogInformation(
             "Save ACME state blob {BlobName} to container {BlobContainerName} with {CertificateCount} configured certificate(s)",
