@@ -26,7 +26,7 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     concurrency:
       group: container-latest
@@ -70,3 +70,22 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: true
           sbom: true
+
+      - name: Tag published image version
+        env:
+          TAG_NAME: ${{ env.IMAGE_VERSION }}
+        run: |
+          remote_sha="$(git ls-remote --tags origin "refs/tags/${TAG_NAME}" | awk '{print $1}')"
+
+          if [ -n "$remote_sha" ]; then
+            if [ "$remote_sha" = "$GITHUB_SHA" ]; then
+              echo "Tag ${TAG_NAME} already points to ${GITHUB_SHA}."
+              exit 0
+            fi
+
+            echo "::error::Tag ${TAG_NAME} already exists at ${remote_sha}, expected ${GITHUB_SHA}."
+            exit 1
+          fi
+
+          git tag "${TAG_NAME}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${TAG_NAME}"
