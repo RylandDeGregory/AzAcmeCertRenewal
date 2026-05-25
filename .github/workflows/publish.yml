@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.dockerignore'
+      - '.github/workflows/publish.yml'
+      - 'Dockerfile'
+      - 'LICENSE'
+      - 'THIRD_PARTY_NOTICES.md'
+      - 'src/**'
 
 permissions:
   contents: read
