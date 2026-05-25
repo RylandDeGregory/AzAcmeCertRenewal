@@ -1,6 +1,9 @@
 # Serverless Let's Encrypt certificate renewal on Azure
 
-This repository renews Let's Encrypt certificates with a .NET Container App Job that talks directly to ACME and Azure SDKs.
+> [!NOTE]
+> This repo is a port of my [AzFuncCertRenewal](https://github.com/RylandDeGregory/AzFuncCertRenewal) repo, as I am improving my C# skills through redesigning my personal PowerShell projects.
+
+This repository renews Let's Encrypt certificates with a .NET Container App Job and persists them to Azure Key Vault.
 
 - Let's Encrypt ACME certificate renewal is implemented in .NET 10 under [src/AzAcmeCertRenewal](src/AzAcmeCertRenewal).
 - Domain verification is performed with DNS-01 challenges written directly to Azure DNS.
@@ -10,7 +13,8 @@ This repository renews Let's Encrypt certificates with a .NET Container App Job 
 
 ## Setup
 
-The following instructions assume that you are using [Azure DNS](https://learn.microsoft.com/en-us/azure/dns/dns-overview) with your domain. If you are not, follow the Microsoft documentation to set up an Azure DNS Zone for your domain. [Tutorial: Host your domain in Azure DNS](https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns).
+The following instructions assume that you are using [Azure DNS](https://learn.microsoft.com/en-us/azure/dns/dns-overview) with your domain.
+If you are not, follow the Microsoft documentation to set up an Azure DNS Zone for your domain. [Tutorial: Host your domain in Azure DNS](https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns).
 
 ### Installation
 
@@ -31,23 +35,31 @@ The Bicep template [main.bicep](infra/main.bicep) deploys the Azure resources us
 
 **NOTE:** Your Azure DNS Zone must be in a Resource Group in the same Azure Subscription as the Resource Group you are deploying to.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FRylandDeGregory%2FAzFuncCertRenewal%2Fmain%2Finfra%2Fmain.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FRylandDeGregory%2FAzAcmeCertRenewal%2Fmain%2Finfra%2Fmain.json)
 
-The template can also be deployed programmatically using [Azure PowerShell](https://learn.microsoft.com/en-us/powershell/module/az.resources/new-azresourcegroupdeployment) or the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/group/deployment?view=azure-cli-latest#az-group-deployment-create).
+The template can also be deployed programmatically using [Azure PowerShell](https://learn.microsoft.com/en-us/powershell/module/az.resources/new-azresourcegroupdeployment)
+or the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/group/deployment?view=azure-cli-latest#az-group-deployment-create).
 
 ```PowerShell
 # Azure PowerShell
 $Params = @{
-    ResourceGroupName = 'testing'
-    TemplateFile      = './infra/main.bicep'
-    dnsZoneResourceId = '/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/testing/providers/Microsoft.Network/dnszones/example.com'
-    containerImage    = 'myregistry.azurecr.io/azacmecertrenewal:latest'
-    Verbose           = $true
+    ResourceGroupName       = 'testing'
+    TemplateFile            = './infra/main.bicep'
+    TemplateParameterObject = @{
+        dnsZoneResourceId = '/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/testing/providers/Microsoft.Network/dnszones/example.com'
+        containerImage    = 'myregistry.azurecr.io/azacmecertrenewal:latest'
+    }
+    Verbose                 = $true
 }
 New-AzResourceGroupDeployment @Params
 
 # Azure CLI
-az group deployment create --resource-group 'testing' --template-file ./infra/main.bicep --parameters dnsZoneResourceId='/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/MyResourceGroup/providers/Microsoft.Network/dnszones/example.com' containerImage='myregistry.azurecr.io/azacmecertrenewal:latest' --verbose
+az deployment group create `
+    --resource-group 'testing' `
+    --template-file ./infra/main.bicep `
+    --parameters dnsZoneResourceId='/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/MyResourceGroup/providers/Microsoft.Network/dnszones/example.com' `
+                 containerImage='myregistry.azurecr.io/azacmecertrenewal:latest' `
+    --verbose
 ```
 
 ### Container image
@@ -79,7 +91,8 @@ The workflow in [.github/workflows/publish.yml](.github/workflows/publish.yml) p
 | `sha-<commit-sha>` | Immutable source commit tag published for pull request and `main` builds. |
 | `1.<run-number>.0` | Immutable run-version tag published for pull request and `main` builds. |
 
-The workflow also asks BuildKit to publish provenance and SBOM attestations for each image. For deployments that need immutable image identity, prefer a `sha-<commit-sha>` tag, a `1.<run-number>.0` tag, or the image digest over `preview` or `latest`.
+The workflow also asks BuildKit to publish provenance and SBOM attestations for each image.
+For deployments that need immutable image identity, prefer a `sha-<commit-sha>` tag, a `1.<run-number>.0` tag, or the image digest over `preview` or `latest`.
 
 Pull request image publishing is restricted to branches from this repository; fork pull requests do not publish images.
 
@@ -89,7 +102,8 @@ Pull request image publishing is restricted to branches from this repository; fo
 
 ### Add ACME state to Storage Account
 
-Using [Azure Storage Explorer](https://learn.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer), upload an ACME state JSON file to the configured blob container. By default, the app reads `acme-state.json`; override the blob name with `AZ_ACME_STATE_BLOB_NAME`.
+Using [Azure Storage Explorer](https://learn.microsoft.com/en-us/azure/vs-azure-tools-storage-manage-with-storage-explorer) or the Azure Portal, upload an ACME state JSON file to the configured blob container.
+By default, the app reads `acme-state.json`; override the blob name with `AZ_ACME_STATE_BLOB_NAME`.
 
 The state blob defines the ACME account and the Key Vault certificates to maintain. The sample file includes separate certificate entries for an apex domain and `www` domain.
 
@@ -138,8 +152,6 @@ dotnet build src/AzAcmeCertRenewal/AzAcmeCertRenewal.csproj
 dotnet run --project src/AzAcmeCertRenewal/AzAcmeCertRenewal.csproj
 ```
 
-The app loads the state blob, checks the matching Key Vault certificate expiration date for each configured certificate, renews certificates that are inside their renewal window, publishes and cleans up Azure DNS TXT records for DNS-01 validation, imports renewed PFX bytes into Key Vault, and saves updated state back to Blob Storage.
-
 ### Test with Pebble
 
 [Pebble](https://github.com/letsencrypt/pebble) can be used as a local ACME server while keeping Azure Blob Storage, Azure DNS, and Key Vault as the app boundary services.
@@ -150,7 +162,8 @@ Start Pebble from the repository root:
 docker compose -f docker-compose.pebble.yml up -d
 ```
 
-Use [acme-state.pebble.sample.json](acme-state.pebble.sample.json) as the state file contents for local testing. It points the ACME directory to `https://localhost:14000/dir`, uses short validation waits, and renews immediately. The compose file sets `PEBBLE_VA_ALWAYS_VALID=1`, so Pebble accepts challenge answers without requiring its local `challtestsrv` DNS server to contain the Azure DNS TXT record.
+Use [acme-state.pebble.sample.json](acme-state.pebble.sample.json) as the state file contents for local testing. It points the ACME directory to `https://localhost:14000/dir`, uses short validation waits, and renews immediately.
+The compose file sets `PEBBLE_VA_ALWAYS_VALID=1`, so Pebble accepts challenge answers without requiring its local `challtestsrv` DNS server to contain the Azure DNS TXT record.
 
 For a fully local state file, copy the sample to an ignored working file and point the app at that path:
 
