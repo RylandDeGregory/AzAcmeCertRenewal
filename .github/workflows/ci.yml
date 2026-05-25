@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  SOLUTION_PATH: src/AzAcmeCertRenewal.slnx
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  ci:
+    name: Lint, build, and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        id: restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Lint
+        id: lint
+        run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --no-restore
+
+      - name: Build
+        id: build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Test
+        id: test
+        run: >-
+          dotnet test ${{ env.SOLUTION_PATH }}
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory artifacts/test-results
+          --collect "XPlat Code Coverage"
+
+      - name: Publish CI report
+        if: always()
+        env:
+          RESTORE_OUTCOME: ${{ steps.restore.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+        run: |
+          mkdir -p artifacts
+          report_file="artifacts/ci-report.md"
+          trx_file="$(find artifacts/test-results -name '*.trx' -print -quit 2>/dev/null || true)"
+          coverage_file="$(find artifacts/test-results -name 'coverage.cobertura.xml' -print -quit 2>/dev/null || true)"
+
+          {
+            echo "## CI report"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| Restore dependencies | ${RESTORE_OUTCOME:-skipped} |"
+            echo "| Lint | ${LINT_OUTCOME:-skipped} |"
+            echo "| Build | ${BUILD_OUTCOME:-skipped} |"
+            echo "| Test | ${TEST_OUTCOME:-skipped} |"
+
+            if [ -n "$trx_file" ]; then
+              total="$(grep -o 'total="[0-9]*"' "$trx_file" | head -n 1 | cut -d '"' -f 2)"
+              passed="$(grep -o 'passed="[0-9]*"' "$trx_file" | head -n 1 | cut -d '"' -f 2)"
+              failed="$(grep -o 'failed="[0-9]*"' "$trx_file" | head -n 1 | cut -d '"' -f 2)"
+              skipped="$(grep -o 'skipped="[0-9]*"' "$trx_file" | head -n 1 | cut -d '"' -f 2)"
+              echo
+              echo "### Test results"
+              echo
+              echo "| Total | Passed | Failed | Skipped |"
+              echo "| ---: | ---: | ---: | ---: |"
+              echo "| ${total:-0} | ${passed:-0} | ${failed:-0} | ${skipped:-0} |"
+            fi
+
+            if [ -n "$coverage_file" ]; then
+              line_rate="$(grep -o 'line-rate="[0-9.]*"' "$coverage_file" | head -n 1 | cut -d '"' -f 2)"
+              line_coverage="$(awk "BEGIN { printf \"%.2f\", ${line_rate:-0} * 100 }")"
+              echo
+              echo "### Coverage"
+              echo
+              echo "Line coverage: ${line_coverage}%"
+            fi
+          } > "$report_file"
+
+          cat "$report_file" >> "$GITHUB_STEP_SUMMARY"

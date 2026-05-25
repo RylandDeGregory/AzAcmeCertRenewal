@@ -1,0 +1,23 @@
+**/bin/
+**/obj/
+.git/
+.github/
+.vscode/
+
+# Infrastructure as code
+infra/
+
+# Local settings and secret-bearing ACME state
+local.settings.json
+appsettings.json
+acme-state.json
+acme-state*.json
+*.pfx
+*.pem
+*.key
+
+# Local/editor artifacts
+.DS_Store
+__blobstorage__/
+__queuestorage__/
+__azurite_db*__.json
