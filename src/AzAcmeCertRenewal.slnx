@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="AzAcmeCertRenewal/AzAcmeCertRenewal.csproj" />
+    <Project Path="AzAcmeCertRenewal.Tests/AzAcmeCertRenewal.Tests.csproj" />
+  </Folder>
+</Solution>

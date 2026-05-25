@@ -1,0 +1,41 @@
+{
+	"acmeDirectoryUrl": "https://acme-v02.api.letsencrypt.org/directory",
+	"contact": [
+		"mailto:admin@example.com"
+	],
+	"termsOfServiceAgreed": true,
+	"accountUrl": null,
+	"accountKeyPem": null,
+	"certificates": [
+		{
+			"name": "example-com",
+			"domains": [
+				"example.com"
+			],
+			"keyVaultCertificateName": "example-com",
+			"privateKeyPem": null,
+			"keyType": "rsa-2048",
+			"alwaysNewKey": false,
+			"renewBeforeDays": 30,
+			"dnsSleepSeconds": 60,
+			"validationTimeoutSeconds": 120,
+			"ocspMustStaple": false,
+			"pfxPassword": null
+		},
+		{
+			"name": "www-example-com",
+			"domains": [
+				"www.example.com"
+			],
+			"keyVaultCertificateName": "www-example-com",
+			"privateKeyPem": null,
+			"keyType": "rsa-2048",
+			"alwaysNewKey": false,
+			"renewBeforeDays": 30,
+			"dnsSleepSeconds": 60,
+			"validationTimeoutSeconds": 120,
+			"ocspMustStaple": false,
+			"pfxPassword": null
+		}
+	]
+}
