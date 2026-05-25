@@ -1,28 +1,28 @@
-@sys.description('The Azure Region to deploy the resources into.')
-param location string
+@sys.description('If Azure Diagnostics Settings are enabled for the resources.')
+param diagnosticSettingsEnabled bool
 
 @sys.description('The name of the Azure Key Vault.')
 @sys.minLength(3)
 @sys.maxLength(24)
 param keyVaultName string
 
-@sys.description('The name of the Azure Storage Account.')
-@sys.minLength(3)
-@sys.maxLength(24)
-param storageAccountName string
-
-@sys.description('The name of the Azure Storage Account Blob container.')
-@sys.minLength(3)
-@sys.maxLength(63)
-param blobContainerName string
-
-@sys.description('If Azure Diagnostics Settings are enabled for the resources.')
-param diagnosticSettingsEnabled bool
+@sys.description('The Azure Region to deploy the resources into.')
+param location string
 
 @sys.description('The name of the Azure Log Analytics Workspace for Diagnostic Settings.')
 @sys.minLength(4)
 @sys.maxLength(63)
 param logAnalyticsWorkspaceName string
+
+@sys.description('The name of the Azure Storage Account Blob container.')
+@sys.minLength(3)
+@sys.maxLength(63)
+param storageAccountBlobContainerName string
+
+@sys.description('The name of the Azure Storage Account.')
+@sys.minLength(3)
+@sys.maxLength(24)
+param storageAccountName string
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsWorkspaceName
@@ -94,7 +94,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2026-04-01' = {
     }
 
     resource blobContainer 'containers' = {
-      name: blobContainerName
+      name: storageAccountBlobContainerName
     }
   }
 }

@@ -22,7 +22,6 @@ var customRoleActions = [
   'Microsoft.Resources/subscriptions/resourceGroups/read'
 ]
 
-// DNS Zone
 resource dnsZone 'Microsoft.Network/dnsZones@2023-07-01-preview' existing = {
   name: dnsZoneName
 }

@@ -5,10 +5,19 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "9994143299469652618"
+      "templateHash": "14484188845583464940"
     }
   },
   "parameters": {
+    "applicationInsightsName": {
+      "type": "string",
+      "defaultValue": "[format('appi-lecertrenew-{0}', parameters('uniqueSuffix'))]",
+      "minLength": 1,
+      "maxLength": 260,
+      "metadata": {
+        "description": "The name of the Azure Application Insights resource used by OpenTelemetry. Default: appi-lecertrenew-$<uniqueSuffix>"
+      }
+    },
     "containerAppEnvironmentName": {
       "type": "string",
       "defaultValue": "[format('cae-lecertrenew-{0}', parameters('uniqueSuffix'))]",
@@ -27,13 +36,6 @@
         "description": "The name of the Azure Container Apps job. Default: caj-lecertrenew-$<uniqueSuffix>"
       }
     },
-    "containerImage": {
-      "type": "string",
-      "defaultValue": "ghcr.io/rylanddegregory/azacmecertrenewal:latest",
-      "metadata": {
-        "description": "The container image to run for certificate renewal. Use a fully qualified image reference including tag. Default: ghcr.io/rylanddegregory/azacmecertrenewal:latest"
-      }
-    },
     "containerCpuCores": {
       "type": "string",
       "defaultValue": "0.25",
@@ -41,11 +43,11 @@
         "description": "The CPU cores allocated to each job replica. Default: 0.25"
       }
     },
-    "containerMemory": {
+    "containerImage": {
       "type": "string",
-      "defaultValue": "0.5Gi",
+      "defaultValue": "ghcr.io/rylanddegregory/azacmecertrenewal:latest",
       "metadata": {
-        "description": "The memory allocated to each job replica. Default: 0.5Gi"
+        "description": "The container image to run for certificate renewal. Use a fully qualified image reference including tag. Default: ghcr.io/rylanddegregory/azacmecertrenewal:latest"
       }
     },
     "containerJobCronExpression": {
@@ -55,13 +57,6 @@
         "description": "The cron schedule for the Container Apps job in UTC. Default: 00:00 every Sunday"
       }
     },
-    "containerJobReplicaTimeoutSeconds": {
-      "type": "int",
-      "defaultValue": 600,
-      "metadata": {
-        "description": "The maximum runtime for a job replica in seconds. Default: 600"
-      }
-    },
     "containerJobReplicaRetryLimit": {
       "type": "int",
       "defaultValue": 1,
@@ -69,13 +64,25 @@
         "description": "The retry limit for failed job replicas. Default: 1"
       }
     },
-    "blobContainerName": {
-      "type": "string",
-      "defaultValue": "acme",
-      "minLength": 3,
-      "maxLength": 63,
+    "containerJobReplicaTimeoutSeconds": {
+      "type": "int",
+      "defaultValue": 600,
       "metadata": {
-        "description": "The name of the Azure Storage Account Blob container. Default: acme"
+        "description": "The maximum runtime for a job replica in seconds. Default: 600"
+      }
+    },
+    "containerMemory": {
+      "type": "string",
+      "defaultValue": "0.5Gi",
+      "metadata": {
+        "description": "The memory allocated to each job replica. Default: 0.5Gi"
+      }
+    },
+    "diagnosticSettingsEnabled": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "If Azure Diagnostics Settings are enabled for the resources. Default: false"
       }
     },
     "dnsZoneResourceId": {
@@ -109,20 +116,13 @@
         "description": "The name of the Azure Log Analytics Workspace that Container Apps logs and Diagnostic Settings will be connected to. Default: log-lecertrenew-$<uniqueSuffix>"
       }
     },
-    "applicationInsightsName": {
+    "storageAccountBlobContainerName": {
       "type": "string",
-      "defaultValue": "[format('appi-lecertrenew-{0}', parameters('uniqueSuffix'))]",
-      "minLength": 1,
-      "maxLength": 260,
+      "defaultValue": "acme",
+      "minLength": 3,
+      "maxLength": 63,
       "metadata": {
-        "description": "The name of the Azure Application Insights resource used by OpenTelemetry. Default: appi-lecertrenew-$<uniqueSuffix>"
-      }
-    },
-    "diagnosticSettingsEnabled": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "If Azure Diagnostics Settings are enabled for the resources. Default: false"
+        "description": "The name of the Azure Storage Account Blob container. Default: acme"
       }
     },
     "storageAccountName": {
@@ -156,21 +156,21 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "monitoring",
+      "name": "Monitoring",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
         },
         "mode": "Incremental",
         "parameters": {
+          "applicationInsightsName": {
+            "value": "[parameters('applicationInsightsName')]"
+          },
           "location": {
             "value": "[parameters('location')]"
           },
           "logAnalyticsWorkspaceName": {
             "value": "[parameters('logAnalyticsWorkspaceName')]"
-          },
-          "applicationInsightsName": {
-            "value": "[parameters('applicationInsightsName')]"
           }
         },
         "template": {
@@ -180,10 +180,18 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "6568392056088089545"
+              "templateHash": "14008781828036145068"
             }
           },
           "parameters": {
+            "applicationInsightsName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 260,
+              "metadata": {
+                "description": "The name of the Azure Application Insights resource used by OpenTelemetry."
+              }
+            },
             "location": {
               "type": "string",
               "metadata": {
@@ -196,14 +204,6 @@
               "maxLength": 63,
               "metadata": {
                 "description": "The name of the Azure Log Analytics Workspace that Container Apps logs and Diagnostic Settings will be connected to."
-              }
-            },
-            "applicationInsightsName": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 260,
-              "metadata": {
-                "description": "The name of the Azure Application Insights resource used by OpenTelemetry."
               }
             }
           },
@@ -252,30 +252,30 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "data",
+      "name": "Data",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
         },
         "mode": "Incremental",
         "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
+          "diagnosticSettingsEnabled": {
+            "value": "[parameters('diagnosticSettingsEnabled')]"
           },
           "keyVaultName": {
             "value": "[parameters('keyVaultName')]"
           },
-          "storageAccountName": {
-            "value": "[parameters('storageAccountName')]"
-          },
-          "blobContainerName": {
-            "value": "[parameters('blobContainerName')]"
-          },
-          "diagnosticSettingsEnabled": {
-            "value": "[parameters('diagnosticSettingsEnabled')]"
+          "location": {
+            "value": "[parameters('location')]"
           },
           "logAnalyticsWorkspaceName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.logAnalyticsWorkspaceName.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'Monitoring'), '2025-04-01').outputs.logAnalyticsWorkspaceName.value]"
+          },
+          "storageAccountBlobContainerName": {
+            "value": "[parameters('storageAccountBlobContainerName')]"
+          },
+          "storageAccountName": {
+            "value": "[parameters('storageAccountName')]"
           }
         },
         "template": {
@@ -285,14 +285,14 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "10671218809317915532"
+              "templateHash": "9721043886121738737"
             }
           },
           "parameters": {
-            "location": {
-              "type": "string",
+            "diagnosticSettingsEnabled": {
+              "type": "bool",
               "metadata": {
-                "description": "The Azure Region to deploy the resources into."
+                "description": "If Azure Diagnostics Settings are enabled for the resources."
               }
             },
             "keyVaultName": {
@@ -303,26 +303,10 @@
                 "description": "The name of the Azure Key Vault."
               }
             },
-            "storageAccountName": {
+            "location": {
               "type": "string",
-              "minLength": 3,
-              "maxLength": 24,
               "metadata": {
-                "description": "The name of the Azure Storage Account."
-              }
-            },
-            "blobContainerName": {
-              "type": "string",
-              "minLength": 3,
-              "maxLength": 63,
-              "metadata": {
-                "description": "The name of the Azure Storage Account Blob container."
-              }
-            },
-            "diagnosticSettingsEnabled": {
-              "type": "bool",
-              "metadata": {
-                "description": "If Azure Diagnostics Settings are enabled for the resources."
+                "description": "The Azure Region to deploy the resources into."
               }
             },
             "logAnalyticsWorkspaceName": {
@@ -332,13 +316,29 @@
               "metadata": {
                 "description": "The name of the Azure Log Analytics Workspace for Diagnostic Settings."
               }
+            },
+            "storageAccountBlobContainerName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 63,
+              "metadata": {
+                "description": "The name of the Azure Storage Account Blob container."
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 24,
+              "metadata": {
+                "description": "The name of the Azure Storage Account."
+              }
             }
           },
           "resources": [
             {
               "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
               "apiVersion": "2026-04-01",
-              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('blobContainerName'))]",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('storageAccountBlobContainerName'))]",
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
               ]
@@ -460,21 +460,24 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]"
+        "[resourceId('Microsoft.Resources/deployments', 'Monitoring')]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "app",
+      "name": "App",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
         },
         "mode": "Incremental",
         "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
+          "applicationInsightsName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'Monitoring'), '2025-04-01').outputs.applicationInsightsName.value]"
+          },
+          "blobContainerName": {
+            "value": "[parameters('storageAccountBlobContainerName')]"
           },
           "containerAppEnvironmentName": {
             "value": "[parameters('containerAppEnvironmentName')]"
@@ -482,44 +485,41 @@
           "containerAppJobName": {
             "value": "[parameters('containerAppJobName')]"
           },
-          "containerImage": {
-            "value": "[parameters('containerImage')]"
-          },
           "containerCpuCores": {
             "value": "[parameters('containerCpuCores')]"
           },
-          "containerMemory": {
-            "value": "[parameters('containerMemory')]"
+          "containerImage": {
+            "value": "[parameters('containerImage')]"
           },
           "containerJobCronExpression": {
             "value": "[parameters('containerJobCronExpression')]"
           },
-          "containerJobReplicaTimeoutSeconds": {
-            "value": "[parameters('containerJobReplicaTimeoutSeconds')]"
-          },
           "containerJobReplicaRetryLimit": {
             "value": "[parameters('containerJobReplicaRetryLimit')]"
           },
-          "blobContainerName": {
-            "value": "[parameters('blobContainerName')]"
+          "containerJobReplicaTimeoutSeconds": {
+            "value": "[parameters('containerJobReplicaTimeoutSeconds')]"
           },
-          "dnsZoneResourceId": {
-            "value": "[parameters('dnsZoneResourceId')]"
+          "containerMemory": {
+            "value": "[parameters('containerMemory')]"
           },
           "diagnosticSettingsEnabled": {
             "value": "[parameters('diagnosticSettingsEnabled')]"
           },
-          "logAnalyticsWorkspaceName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.logAnalyticsWorkspaceName.value]"
-          },
-          "applicationInsightsName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.applicationInsightsName.value]"
+          "dnsZoneResourceId": {
+            "value": "[parameters('dnsZoneResourceId')]"
           },
           "keyVaultName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'data'), '2025-04-01').outputs.keyVaultName.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'Data'), '2025-04-01').outputs.keyVaultName.value]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'Monitoring'), '2025-04-01').outputs.logAnalyticsWorkspaceName.value]"
           },
           "storageAccountName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'data'), '2025-04-01').outputs.storageAccountName.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'Data'), '2025-04-01').outputs.storageAccountName.value]"
           }
         },
         "template": {
@@ -529,14 +529,24 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "8635766715698487373"
+              "templateHash": "16543465795529718134"
             }
           },
           "parameters": {
-            "location": {
+            "applicationInsightsName": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 260,
               "metadata": {
-                "description": "The Azure Region to deploy the resources into."
+                "description": "The name of the Azure Application Insights resource used by OpenTelemetry."
+              }
+            },
+            "blobContainerName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 63,
+              "metadata": {
+                "description": "The name of the Azure Storage Account Blob container."
               }
             },
             "containerAppEnvironmentName": {
@@ -555,22 +565,16 @@
                 "description": "The name of the Azure Container Apps job."
               }
             },
-            "containerImage": {
-              "type": "string",
-              "metadata": {
-                "description": "The container image to run for certificate renewal. Use a fully qualified image reference including tag."
-              }
-            },
             "containerCpuCores": {
               "type": "string",
               "metadata": {
                 "description": "The CPU cores allocated to each job replica."
               }
             },
-            "containerMemory": {
+            "containerImage": {
               "type": "string",
               "metadata": {
-                "description": "The memory allocated to each job replica."
+                "description": "The container image to run for certificate renewal. Use a fully qualified image reference including tag."
               }
             },
             "containerJobCronExpression": {
@@ -579,30 +583,22 @@
                 "description": "The cron schedule for the Container Apps job in UTC."
               }
             },
-            "containerJobReplicaTimeoutSeconds": {
-              "type": "int",
-              "metadata": {
-                "description": "The maximum runtime for a job replica in seconds."
-              }
-            },
             "containerJobReplicaRetryLimit": {
               "type": "int",
               "metadata": {
                 "description": "The retry limit for failed job replicas."
               }
             },
-            "blobContainerName": {
-              "type": "string",
-              "minLength": 3,
-              "maxLength": 63,
+            "containerJobReplicaTimeoutSeconds": {
+              "type": "int",
               "metadata": {
-                "description": "The name of the Azure Storage Account Blob container."
+                "description": "The maximum runtime for a job replica in seconds."
               }
             },
-            "dnsZoneResourceId": {
+            "containerMemory": {
               "type": "string",
               "metadata": {
-                "description": "The Azure Resource ID of the existing Azure DNS Zone."
+                "description": "The memory allocated to each job replica."
               }
             },
             "diagnosticSettingsEnabled": {
@@ -611,20 +607,10 @@
                 "description": "If Azure Diagnostics Settings are enabled for the resources."
               }
             },
-            "logAnalyticsWorkspaceName": {
+            "dnsZoneResourceId": {
               "type": "string",
-              "minLength": 4,
-              "maxLength": 63,
               "metadata": {
-                "description": "The name of the Azure Log Analytics Workspace that Container Apps logs and Diagnostic Settings will be connected to."
-              }
-            },
-            "applicationInsightsName": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 260,
-              "metadata": {
-                "description": "The name of the Azure Application Insights resource used by OpenTelemetry."
+                "description": "The Azure Resource ID of the existing Azure DNS Zone."
               }
             },
             "keyVaultName": {
@@ -633,6 +619,20 @@
               "maxLength": 24,
               "metadata": {
                 "description": "The name of the Azure Key Vault."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The Azure Region to deploy the resources into."
+              }
+            },
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 63,
+              "metadata": {
+                "description": "The name of the Azure Log Analytics Workspace that Container Apps logs and Diagnostic Settings will be connected to."
               }
             },
             "storageAccountName": {
@@ -700,23 +700,20 @@
                 "type": "SystemAssigned"
               },
               "properties": {
-                "environmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]",
-                "workloadProfileName": "Consumption",
                 "configuration": {
-                  "triggerType": "Schedule",
-                  "replicaTimeout": "[parameters('containerJobReplicaTimeoutSeconds')]",
                   "replicaRetryLimit": "[parameters('containerJobReplicaRetryLimit')]",
+                  "replicaTimeout": "[parameters('containerJobReplicaTimeoutSeconds')]",
                   "scheduleTriggerConfig": {
                     "cronExpression": "[parameters('containerJobCronExpression')]",
                     "parallelism": 1,
                     "replicaCompletionCount": 1
-                  }
+                  },
+                  "triggerType": "Schedule"
                 },
+                "environmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]",
                 "template": {
                   "containers": [
                     {
-                      "name": "azacmecertrenewal",
-                      "image": "[parameters('containerImage')]",
                       "env": [
                         {
                           "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -739,13 +736,16 @@
                           "value": "[parameters('blobContainerName')]"
                         }
                       ],
+                      "image": "[parameters('containerImage')]",
+                      "name": "azacmecertrenewal",
                       "resources": {
                         "cpu": "[json(parameters('containerCpuCores'))]",
                         "memory": "[parameters('containerMemory')]"
                       }
                     }
                   ]
-                }
+                },
+                "workloadProfileName": "Consumption"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]"
@@ -786,14 +786,14 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'data')]",
-        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]"
+        "[resourceId('Microsoft.Resources/deployments', 'Data')]",
+        "[resourceId('Microsoft.Resources/deployments', 'Monitoring')]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "rbac",
+      "name": "Rbac",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -801,16 +801,7 @@
         "mode": "Incremental",
         "parameters": {
           "containerAppJobName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'app'), '2025-04-01').outputs.containerAppJobName.value]"
-          },
-          "storageAccountName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'data'), '2025-04-01').outputs.storageAccountName.value]"
-          },
-          "keyVaultName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'data'), '2025-04-01').outputs.keyVaultName.value]"
-          },
-          "applicationInsightsName": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'monitoring'), '2025-04-01').outputs.applicationInsightsName.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'App'), '2025-04-01').outputs.containerAppJobName.value]"
           },
           "dnsZoneResourceId": {
             "value": "[parameters('dnsZoneResourceId')]"
@@ -826,7 +817,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "11930984760433938723"
+              "templateHash": "8486269247993103922"
             }
           },
           "parameters": {
@@ -836,30 +827,6 @@
               "maxLength": 32,
               "metadata": {
                 "description": "The name of the Azure Container Apps job."
-              }
-            },
-            "storageAccountName": {
-              "type": "string",
-              "minLength": 3,
-              "maxLength": 24,
-              "metadata": {
-                "description": "The name of the Azure Storage Account."
-              }
-            },
-            "keyVaultName": {
-              "type": "string",
-              "minLength": 3,
-              "maxLength": 24,
-              "metadata": {
-                "description": "The name of the Azure Key Vault."
-              }
-            },
-            "applicationInsightsName": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 260,
-              "metadata": {
-                "description": "The name of the Azure Application Insights resource used by OpenTelemetry."
               }
             },
             "dnsZoneResourceId": {
@@ -885,12 +852,11 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
-              "name": "[guid(resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'))]",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'))]",
               "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
                 "principalId": "[reference(resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), '2026-01-01', 'full').identity.principalId]",
-                "principalType": "ServicePrincipal"
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]"
               },
               "metadata": {
                 "description": "Allows Container Apps job managed identity to read and write ACME state blobs."
@@ -899,12 +865,11 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
-              "name": "[guid(resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a4417e6f-fecd-4de8-b567-7b0420556985'))]",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a4417e6f-fecd-4de8-b567-7b0420556985'))]",
               "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a4417e6f-fecd-4de8-b567-7b0420556985')]",
                 "principalId": "[reference(resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), '2026-01-01', 'full').identity.principalId]",
-                "principalType": "ServicePrincipal"
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a4417e6f-fecd-4de8-b567-7b0420556985')]"
               },
               "metadata": {
                 "description": "Allows Container Apps job managed identity to manage Key Vault Certificates."
@@ -913,12 +878,11 @@
             {
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]",
-              "name": "[guid(resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb'))]",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb'))]",
               "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
                 "principalId": "[reference(resourceId('Microsoft.App/jobs', parameters('containerAppJobName')), '2026-01-01', 'full').identity.principalId]",
-                "principalType": "ServicePrincipal"
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]"
               },
               "metadata": {
                 "description": "Allows Container Apps job managed identity to publish OpenTelemetry to Application Insights with Microsoft Entra authentication."
@@ -927,7 +891,7 @@
             {
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2025-04-01",
-              "name": "DNSZoneRoleAssignment",
+              "name": "Rbac-DnsZone",
               "subscriptionId": "[variables('dnsZoneSubscription')]",
               "resourceGroup": "[variables('dnsZoneResourceGroup')]",
               "properties": {
@@ -1040,9 +1004,7 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'app')]",
-        "[resourceId('Microsoft.Resources/deployments', 'data')]",
-        "[resourceId('Microsoft.Resources/deployments', 'monitoring')]"
+        "[resourceId('Microsoft.Resources/deployments', 'App')]"
       ]
     }
   ]
