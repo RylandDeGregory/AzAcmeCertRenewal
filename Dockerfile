@@ -28,7 +28,7 @@ RUN dotnet publish src/AzAcmeCertRenewal/AzAcmeCertRenewal.csproj \
         -p:DebugSymbols=false
 
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled@sha256:1b44af9c88f224823439d7ccd89fcd37125b538b9c17863c5cc82efd827b4983 AS final
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled@sha256:9cae0b131d058693c8d7496fed4a188380f05f27f34c98dd9a516b4d0331b0c4 AS final
 
 ENV DOTNET_EnableDiagnostics=0 \
     DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
