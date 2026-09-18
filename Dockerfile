@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:c0790639332692a0d56cdd81ed581cfd24d040d9839764c138994866df89a3b6 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS build
 
 ARG TARGETARCH
 ARG VERSION=0.0.0
@@ -28,7 +28,7 @@ RUN dotnet publish src/AzAcmeCertRenewal/AzAcmeCertRenewal.csproj \
         -p:DebugSymbols=false
 
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled@sha256:1b44af9c88f224823439d7ccd89fcd37125b538b9c17863c5cc82efd827b4983 AS final
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled@sha256:18d4848091a40d13dbfdd6a8340c1657dc3e2f2d7fa2f042e9d162e68669dbc9 AS final
 
 ENV DOTNET_EnableDiagnostics=0 \
     DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
