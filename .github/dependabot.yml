@@ -14,9 +14,9 @@ updates:
       timezone: America/New_York
     open-pull-requests-limit: 5
     groups:
-      azure-sdk:
+      nuget-dependencies:
         patterns:
-          - Azure.*
+          - '*'
 
   - package-ecosystem: docker
     directory: /
@@ -26,6 +26,10 @@ updates:
       time: '05:15'
       timezone: America/New_York
     open-pull-requests-limit: 5
+    groups:
+      docker-images:
+        patterns:
+          - '*'
 
   - package-ecosystem: github-actions
     directory: /
@@ -35,3 +39,7 @@ updates:
       time: '05:30'
       timezone: America/New_York
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - '*'
